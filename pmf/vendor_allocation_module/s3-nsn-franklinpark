@@ -1,0 +1,7 @@
+[default]
+access_key = 6TQ7MYACFHR64LHDUTNY
+secret_key = UYPyyd5CgPotmJBZ7qmInvvGfZjTaPHnf9uYs6pF
+host_base = ch-dc-s3-gsn-33.eecloud.nsn-net.net
+host_bucket = ch-dc-s3-gsn-33.eecloud.nsn-net.net
+human_readable_sizes = True
+multipart_chunk_size_mb = 512

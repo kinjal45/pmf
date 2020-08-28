@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pr-nam-dna-staging
+  labels:
+    name: pmf-construction-prediction
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pmf-construction-prediction
+  template:
+    metadata:
+      labels:
+        app: pmf-construction-prediction
+    spec:
+      containers:
+      - name:  pmf-construction-prediction
+        image: ava-docker-local.esisoj70.emea.nsn-net.net/ava/customers/pmf:CI_IMAGE_TAG
+        command: ["/run_job.sh"]
+        env:
+        - name: S3_END
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_enpoint
+        - name: S3_ACC
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_access_key
+        - name: S3_SEC
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_secret_key        
+        - name: S3_BUCKET
+          value: "pmf-project-management-forecasting"
+        - name: S3_CONFIG_PATH
+          value: "staging/configuration/pmf_tmo_staging_config.json"
+        - name: S3_WIP_PATH
+          value: "s3://pmf-usa/received/transactional/construction_wip/"
+      restartPolicy: Always

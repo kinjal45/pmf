@@ -1,0 +1,79 @@
+{
+    "tower_works": {
+        "model_path": {
+            "encoder": "pmf-project-management-forecasting/development/ml-models/tower-works/encoder",
+            "regressor": "pmf-project-management-forecasting/development/ml-models/tower-works/regressor"
+        },
+        "in_progress": {
+            "raw_data_path": "pmf-usa/received/transactional/tower-works/wip/",
+            "proceeded_path": "proceeded/transactional/tower-works/wip/",
+            "featurized_data_path": "pmf-project-management-forecasting/development/data-lake/tower-works/wip/"
+        },
+        "completed": {
+            "raw_data_path": "pmf-usa/received/transactional/tower-works/completed/",
+            "proceeded_path": "proceeded/transactional/tower-works/completed/",
+            "featurized_data_path": "pmf-project-management-forecasting/development/data-lake/tower-works/completed/"
+        },
+        "predictions_path": "pmf-project-management-forecasting/development/predictions/tower-works/docker-test",
+        "features": {
+            "categorical": [
+                "region",
+                "market",
+                "package_name",
+                "site_ref_model",
+                "site_type",
+                "site_class"
+            ],
+            "numerical": [
+                "site_agl",
+                "day_rate"
+            ]
+        },
+        "model_to_be_used": "lr"
+    },
+    "civil_works": {
+        "model_path": {
+            "encoder": "pmf-project-management-forecasting/development/ml-models/civil-works/encoder",
+            "regressor": "pmf-project-management-forecasting/development/ml-models/civil-works/regressor"
+        },
+        "in_progress": {
+            "raw_data_path": "pmf-usa/received/transactional/civil-works/wip/",
+            "proceeded_path": "proceeded/transactional/civil-works/wip/",
+            "featurized_data_path": "pmf-project-management-forecasting/development/data-lake/civil-works/wip/"
+        },
+        "completed": {
+            "raw_data_path": "pmf-usa/received/transactional/civil-works/completed/",
+            "proceeded_path": "proceeded/transactional/civil-works/completed/",
+            "featurized_data_path": "pmf-project-management-forecasting/development/data-lake/civil-works/completed/"
+        },
+        "predictions_path": "pmf-project-management-forecasting/development/predictions/civil-works/docker-test",
+        "features": {
+            "categorical": [
+                "region",
+                "market",
+                "package_name",
+                "site_ref_model",
+                "site_type",
+                "site_class"
+            ],
+            "numerical": [
+                "site_agl",
+                "day_rate"
+            ]
+        },
+        "model_to_be_used": "lr"
+    },
+    "s3_endpoint": "ch-dc-s3-gsn-33.eecloud.nsn-net.net",
+    "s3_access_key": "6TQ7MYACFHR64LHDUTNY",
+    "s3_secret_key": "UYPyyd5CgPotmJBZ7qmInvvGfZjTaPHnf9uYs6pF",
+    "s3_raw_data_bucket": "pmf-usa",
+    "thrift_user": "thriftproject395",
+    "thrift_password": "YRbqixSGC03CuWsB6w2bcyRuCFuc3P1p",
+    "thrift_url": "ava-americas-franklinpark.escloud.dynamic.nsn-net.net",
+    "thrift_port": 7263,
+    "thrift_db": "abi_pmf_prod",
+    "models_to_run": [
+        "tower_works",
+        "civil_works"
+    ]
+}

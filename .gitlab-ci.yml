@@ -1,0 +1,159 @@
+image: docker:stable-git
+services:
+  - docker:stable-dind
+
+variables:
+  # When using dind service we need to instruct docker, to talk with the
+  # daemon started inside of the service. The daemon is available with
+  # a network connection instead of the default /var/run/docker.sock socket.
+  #
+  # The 'docker' hostname is the alias of the service container as described at
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_images.html#accessing-the-services
+  #
+  # Note that if you're using the Kubernetes executor, the variable should be set to
+  # tcp://localhost:2375 because of how the Kubernetes executor connects services
+  # to the job container
+  DOCKER_HOST: tcp://localhost:2375
+  # For non-Kubernetes executors, we use tcp://docker:2375
+  # DOCKER_HOST: tcp://docker:2375
+  #
+  # This will instruct Docker not to start over TLS.
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+
+  # Abi k8s cluster dns
+  EUROPE_DNS: production.aibi-platform-es.he-pi-os-gsn-101.k8s.dyn.nesc.nokia.net
+  AMERICAS_DNS: production.aibi-prod-fp.ch-dc-os-gsn-107.k8s.dyn.nesc.nokia.net
+  ASIA_DNS: production.aibi-platform-bh.bh-dc-os-gsn-103.k8s.dyn.nesc.nokia.net
+  CHINA_DNS: production.aibi-platform-hz.hz-dc-os-gsn-22.k8s.dyn.nesc.nokia.net
+
+.common:
+  tags:
+    - &CLOUD_DATA_CENTER nesc-americas
+
+#----------------------------------------------------------------------------------------------------------------#
+
+stages:
+  - build
+  - route-cluster
+  - deploy
+
+#----------------------------------------------------------------------------------------------------------------#
+
+
+build-prediction-image:
+  tags:
+    - *CLOUD_DATA_CENTER
+  stage: build
+  variables:
+    LOCAL_IMAGE: pmf:$CI_IMAGE_TAG
+    REGISTRY_IMAGE: ava-docker-local.esisoj70.emea.nsn-net.net/ava/customers/pmf:$CI_IMAGE_TAG
+  script:
+    - echo $CI_IMAGE_TAG $LOCAL_IMAGE $REGISTRY_IMAGE
+    - source ${CI_COMMIT_REF_NAME}.env
+    - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_TOKEN $CI_REGISTRY
+    - cd pmf/predictions/
+    - docker build -t $LOCAL_IMAGE -f Dockerfile .
+    - docker tag $LOCAL_IMAGE $REGISTRY_IMAGE
+    - docker push $REGISTRY_IMAGE
+    - cd -
+  only:
+    refs:
+      - develop
+      - master
+    variables:
+      - $CI_BUILD_PREDICTION_IMAGE  == "true"
+
+build-allocation-image:
+  tags:
+    - *CLOUD_DATA_CENTER
+  stage: build
+  variables:
+    LOCAL_IMAGE: pmf/allocation:$CI_IMAGE_TAG
+    REGISTRY_IMAGE: ava-docker-local.esisoj70.emea.nsn-net.net/ava/customers/pmf/allocation:$CI_IMAGE_TAG
+  script:
+    - source ${CI_COMMIT_REF_NAME}.env
+    - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_TOKEN $CI_REGISTRY
+    - cd pmf/vendor_allocation_module
+    - docker build -t $LOCAL_IMAGE -f Dockerfile .
+      && docker tag $LOCAL_IMAGE $REGISTRY_IMAGE
+      && docker push $REGISTRY_IMAGE
+    - cd -
+  only:
+    refs:
+      - develop
+      - master
+    variables:
+      - $CI_BUILD_ALLOCATION_IMAGE  == "true"
+
+#----------------------------------------------------------------------------------------------------------------#
+
+route-cluster:
+  tags:
+    - *CLOUD_DATA_CENTER
+  stage: route-cluster
+  image: python:3.8.0
+  before_script:
+    - apt update && apt install git -y
+  script:
+    - git clone https://oauth2:X71MnYsRJF5fS9zxSVBf@gitlabe2.ext.net.nokia.com/ABI/platform/kubeconfig.git
+    - mv kubeconfig/americas.yaml .
+  artifacts:
+    paths:
+      - americas.yaml
+  only:
+    - develop
+    - master
+
+#----------------------------------------------------------------------------------------------------------------#
+
+deploy-prediction:
+  tags:
+    - *CLOUD_DATA_CENTER
+  stage: deploy
+  image: dtzar/helm-kubectl
+  variables:
+    KUBECONFIG: americas.yaml
+  before_script:
+    - source ${CI_COMMIT_REF_NAME}.env
+    - sed -i "s~CI_IMAGE_TAG~$CI_IMAGE_TAG~g" deployment/deployment-prediction.yaml
+    - sed -i "s~CI_BUSINESS~$CI_BUSINESS~g" deployment/deployment-prediction.yaml
+    - sed -i "s~CI_REGION~$CI_REGION~g" deployment/deployment-prediction.yaml
+  script:
+    - echo "variables $CI_S3_ENDPOINT $CI_S3_ACCESS_KEY $CI_S3_SECRET_KEY"
+    - kubectl create secret generic s3-credentials --from-literal=s3_enpoint=$CI_S3_ENDPOINT --from-literal=s3_access_key=$CI_S3_ACCESS_KEY --from-literal=s3_secret_key=$CI_S3_SECRET_KEY -n dna-$CI_REGION --dry-run -o yaml |  kubectl apply -f -
+    - kubectl apply -f deployment/deployment-prediction.yaml -n dna-$CI_REGION
+    - kubectl rollout restart deploy/pr-$CI_BUSINESS-dna-$CI_REGION -n dna-$CI_REGION
+
+  only:
+    refs:
+      - develop
+      - master
+    variables:
+      - $CI_DEPLOY_PREDICTION  == "true"
+
+deploy-allocation:
+  tags:
+    - *CLOUD_DATA_CENTER
+  stage: deploy
+  image: dtzar/helm-kubectl
+  variables:
+    KUBECONFIG: americas.yaml
+  before_script:
+    - source ${CI_COMMIT_REF_NAME}.env
+    - sed -i "s~CI_IMAGE_TAG~$CI_IMAGE_TAG~g" deployment/deployment-allocation.yaml
+    - sed -i "s~CI_BUSINESS~$CI_BUSINESS~g" deployment/deployment-allocation.yaml
+    - sed -i "s~CI_REGION~$CI_REGION~g" deployment/deployment-allocation.yaml
+  script:
+    - echo "variables $CI_S3_ENDPOINT $CI_S3_ACCESS_KEY $CI_S3_SECRET_KEY"
+    - kubectl create secret generic s3-credentials --from-literal=s3_enpoint=$CI_S3_ENDPOINT --from-literal=s3_access_key=$CI_S3_ACCESS_KEY --from-literal=s3_secret_key=$CI_S3_SECRET_KEY -n dna-$CI_REGION --dry-run -o yaml |  kubectl apply -f -
+    - kubectl apply -f deployment/deployment-allocation.yaml -n dna-$CI_REGION
+    - kubectl rollout restart deploy/ca-$CI_BUSINESS-dna-$CI_REGION -n dna-$CI_REGION
+
+  only:
+    refs:
+      - develop
+      - master
+    variables:
+      - $CI_DEPLOY_ALLOCATION == "true"
+

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ca-nam-dna-staging
+  labels:
+    name: pmf-crew-allocation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pmf-crew-allocation
+  template:
+    metadata:
+      labels:
+        app: pmf-crew-allocation
+    spec:
+      containers:
+      - name:  pmf-crew-allocation
+        image: ava-docker-local.esisoj70.emea.nsn-net.net/ava/customers/pmf/allocation:CI_IMAGE_TAG
+        command: ["/run_allocation.sh"]
+        env:
+        - name: S3_END
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_enpoint
+        - name: S3_ACC
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_access_key
+        - name: S3_SEC
+          valueFrom:
+             secretKeyRef:
+                name: s3-credentials
+                key:  s3_secret_key        
+        - name: S3_BUCKET
+          value: "pmf-project-management-forecasting"
+        - name: S3_CONFIG_FILE
+          value: "staging/configuration/pmf_vendor_allocation_json.txt"
+        - name: S3_PATH
+          value: "s3://pmf-usa/received/transactional/planner-data/"
+        resources:
+          limits:
+            cpu: "6"
+            memory: 20Gi
+          requests:
+            cpu: "4"
+            memory: 16Gi
+      restartPolicy: Always

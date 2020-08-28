@@ -1,0 +1,10 @@
+numpy
+pandas
+boto==2.48.0
+boto3==1.9.2
+s3cmd
+xlsxwriter
+openpyxl
+python-dateutil
+workalendar
+scikit-learn

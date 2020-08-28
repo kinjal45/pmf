@@ -1,0 +1,2 @@
+#!/bin/bash
+/scripts/run-bridge.sh /opt/spark/bin/spark-submit --jars /opt/spark/jars/hadoop-aws-2.9.1.jar,/opt/spark/jars/aws-java-sdk-bundle-1.11.199.jar /opt/spark/pmf/run_model_building_all_models.py $S3_END $S3_ACC $S3_SEC $S3_BUCKET $S3_CONFIG_PATH

@@ -1,0 +1,8 @@
+git+https://github.com/baztian/jaydebeapi.git
+boto3
+numpy
+pandas
+flask
+openpyxl
+xlsxwriter
+boto
